@@ -6,6 +6,8 @@ import RPi.GPIO as GPIO
 import sys
 from paho.mqtt.client import Client
 import datetime
+import sched, time
+s = sched.scheduler(time.time, time.sleep)
  
 
 #intialise the device
@@ -22,6 +24,15 @@ def read_temp_raw():
     lines = f.readlines()
     f.close()
     return lines
+
+def run_periodically(start, end, interval, func):
+    event_time = start
+    while event_time < end:
+        s.enterabs(event_time, 0, func, ())
+        event_time += interval
+    s.run()
+    run_periodically(time()+5, time()+10, 1,read_temp_raw)
+
 
 def read_temp():
     lines = read_temp_raw()
@@ -42,10 +53,13 @@ while True:
 	#print(read_temp())
 	temp_value = read_temp()
 	normal_temp=86
+	frequency =4
 	if temp_value > normal_temp:
             print (temp_value)
+            current_time = datetime.datetime.now()
+            print (current_time)
         else:
-            print sleep
+            print 'system is in sleep'
 	state=0
 	temp_threshold = 87
 	if temp_value > temp_threshold:
@@ -66,5 +80,32 @@ while True:
 	pin = 22
 	GPIO.setup(pin, GPIO.OUT)
 	GPIO.output(pin, (GPIO.LOW if state == 0 else GPIO.HIGH))
+        s.enter(60, 1, read_temp, ())
+
+s.enter(60, 1, read_temp, (s,))
+s.run()
+
+
+
+
+
+#from sched import scheduler
+#from time import time, sleep
+
+#s = scheduler(time, sleep)
+
+#def run_periodically(start, end, interval, func):
+ #   event_time = start
+  #  while event_time < end:
+   #     s.enterabs(event_time, 0, func, ())
+    #    event_time += interval
+    #s.run()
+
+#if __name__ == '__main__':
+
+ #   def say_hello():
+  #      print 'hello'    
+
+   # run_periodically(time()+5, time()+10, 1, say_hello)
         
 
